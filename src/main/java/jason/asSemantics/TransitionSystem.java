@@ -45,6 +45,8 @@ import jason.asSyntax.UnnamedVar;
 import jason.asSyntax.VarTerm;
 import jason.asSyntax.parser.ParseException;
 import jason.bb.BeliefBase;
+import jason.mod.TSListener;
+import jason.mod.TSLogger;
 import jason.runtime.Settings;
 import jason.stdlib.add_nested_source;
 import jason.stdlib.desire;
@@ -543,7 +545,43 @@ public class TransitionSystem implements Serializable {
         C.RP = new ArrayList<>();
         List<Plan> candidateRPs = ag.pl.getCandidatePlans(C.SE.trigger);
         if (candidateRPs != null) {
-            for (Plan pl : candidateRPs) {
+
+            // Note: Modifications by Fahid ...
+            // Needed because the selection of plan would exit the loop on the first
+            // plan encountered that satisfies the conditions
+            String[] candidates = new String[candidateRPs.size()];
+            for (int i = 0 ; i < candidateRPs.size();  i++) {
+                final Plan plan = candidateRPs.get(i);
+                final String lineOfCode = ((plan != null) && (plan.getTrigger() != null)) ?
+                                            plan.getTrigger().getLiteral().getSrcInfo().getSrcLine() + "" : "unknown";
+                final String sourceFile = ((plan != null) && (plan.getTrigger() != null)) ?
+                        plan.getTrigger().getLiteral().getSrcInfo().getSrcFile() : "unknown";
+                final String planString =  plan.toASString();
+
+                if (planString.contains(":")) {
+                    if (planString.indexOf(":") <  planString.indexOf("<-")) {
+                        final String[] planParts = planString.split(":");
+                        candidates[i] = planParts[0].split(" ")[1] + "|" + planParts[1].split("<-")[0].toString() + "|belief|" + sourceFile + "|" + lineOfCode;
+                    }
+                } else {
+                    final String[] planParts =  planString.split("<-");
+                    candidates[i] =  planParts[0].split(" ")[1] + "||belief|" +
+                            sourceFile + "|" +  lineOfCode;
+                }
+            }
+
+            TSLogger.getInstance()
+                    .log(
+                            getUserAgArch().getAgName(),
+                            "PLAN_TRACE",
+                            candidates,
+                            getUserAgArch().getCycleNumber()
+                    );
+            // End of modification block
+
+            // Note: modified this loop to integer based loop rather than enhanced for-loop.
+            for (int i = 0; i < candidateRPs.size(); i++) {
+                final Plan pl = candidateRPs.get(i);
                 Unifier relUn = pl.isRelevant(C.SE.trigger, null);
                 C.SO = new Option(pl, relUn);
                 C.RP.add(C.SO);
@@ -554,6 +592,15 @@ public class TransitionSystem implements Serializable {
                     } else {
                         Iterator<Unifier> r = context.logicalConsequence(ag, relUn);
                         if (r != null && r.hasNext()) {
+                            //Note: Modifieb by Fahid....
+                            // Log the selected plan...
+                            TSLogger.getInstance().log(
+                                    getUserAgArch().getAgName(),
+                                    "PLAN_SELECTION",
+                                    new Object[]{candidates[i]},
+                                    getUserAgArch().getCycleNumber()
+                            );
+                            // End of modification block
                             C.SO = new Option(pl, r.next());
                             return;
                         }
@@ -563,6 +610,39 @@ public class TransitionSystem implements Serializable {
             C.SO = null;
             applyRelApplPlRule2("applicable");
         } else {
+            // Note: modified by Fahid...
+            String lineOfCode = "unknown";
+            String sourceFile = "unknown";
+            String sourceSample = "unknown";
+            // todo: remove this try-catch block and replace with proper checks....
+            try {
+
+                lineOfCode =  C.getPendingActions()
+                                .get(C.getSelectedIntention().getId())
+                                .getActionTerm().getSrcInfo().getSrcLine() + "";
+
+                sourceFile =  C.getPendingActions()
+                                .get(C.getSelectedIntention().getId())
+                                .getActionTerm().getSrcInfo().getSrcFile();
+
+                final String[] intentionParts = C.getSelectedIntention().toString().split("\n");
+                sourceSample = intentionParts[1].split("\\.\\.\\.")[1].split(";")[0].replace("\\/ \\{\\}", "");
+
+            } catch (Exception ex){}
+            finally {
+                TSLogger.getInstance().log(
+                        getUserAgArch().getAgName(),
+                        "PLAN_NOT_FOUND",
+                        new String[]{
+                                C.SE.trigger.toString(),
+                                sourceFile,
+                                lineOfCode,
+                                sourceSample
+                        },
+                        getUserAgArch().getCycleNumber()
+                );
+            }
+            // End of modification block...
             // problem: no plan
             applyRelApplPlRule2("relevant");
         }
