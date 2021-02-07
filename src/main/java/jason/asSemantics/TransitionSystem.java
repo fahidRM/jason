@@ -545,34 +545,22 @@ public class TransitionSystem implements Serializable {
         C.RP = new ArrayList<>();
         List<Plan> candidateRPs = ag.pl.getCandidatePlans(C.SE.trigger);
         if (candidateRPs != null) {
-
             // Note: Modifications by Fahid ...
             // Needed because the selection of plan would exit the loop on the first
             // plan encountered that satisfies the conditions
             String[] candidates = new String[candidateRPs.size()];
-            for (int i = 0 ; i < candidateRPs.size();  i++) {
+            for (int i = 0; i < candidateRPs.size(); i++) {
                 final Plan plan = candidateRPs.get(i);
                 final String lineOfCode = ((plan != null) && (plan.getTrigger() != null)) ?
-                                            plan.getTrigger().getLiteral().getSrcInfo().getSrcLine() + "" : "unknown";
+                        plan.getTrigger().getLiteral().getSrcInfo().getSrcLine() + "" : "unknown";
                 final String sourceFile = ((plan != null) && (plan.getTrigger() != null)) ?
                         plan.getTrigger().getLiteral().getSrcInfo().getSrcFile() : "unknown";
-                final String planString =  plan.toASString();
-
-                if (planString.contains(":")) {
-                    if (planString.indexOf(":") <  planString.indexOf("<-")) {
-                        final String[] planParts = planString.split(":");
-                        candidates[i] = planParts[0].split(" ")[1] + "|" + planParts[1].split("<-")[0].toString() + "|belief|" + sourceFile + "|" + lineOfCode;
-                    }
-                } else {
-                    final String[] planParts =  planString.split("<-");
-                    candidates[i] =  planParts[0].split(" ")[1] + "||belief|" +
-                            sourceFile + "|" +  lineOfCode;
-                }
+                candidates[i] = plan.getTrigger().toString().replace("\\+!", "").replace("\\+", "")
+                + "|" +  plan.getContext() + "|belief|" + sourceFile + "|" +  lineOfCode;
             }
 
             TSLogger.getInstance()
-                    .log(
-                            getUserAgArch().getAgName(),
+                    .log(   getUserAgArch().getAgName(),
                             "PLAN_TRACE",
                             candidates,
                             getUserAgArch().getCycleNumber()
@@ -588,11 +576,20 @@ public class TransitionSystem implements Serializable {
                 if (relUn != null) { // is relevant
                     LogicalFormula context = pl.getContext();
                     if (context == null) { // context is true
+                        //Note: Modified by Fahid....
+                        // Log the selected plan...
+                        TSLogger.getInstance().log(
+                                getUserAgArch().getAgName(),
+                                "PLAN_SELECTION",
+                                new Object[]{candidates[i]},
+                                getUserAgArch().getCycleNumber()
+                        );
+                        // End of modification block
                         return;
                     } else {
                         Iterator<Unifier> r = context.logicalConsequence(ag, relUn);
                         if (r != null && r.hasNext()) {
-                            //Note: Modifieb by Fahid....
+                            //Note: Modified by Fahid....
                             // Log the selected plan...
                             TSLogger.getInstance().log(
                                     getUserAgArch().getAgName(),
@@ -609,7 +606,8 @@ public class TransitionSystem implements Serializable {
             }
             C.SO = null;
             applyRelApplPlRule2("applicable");
-        } else {
+        }
+        else {
             // Note: modified by Fahid...
             String lineOfCode = "unknown";
             String sourceFile = "unknown";
