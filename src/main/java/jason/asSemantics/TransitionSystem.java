@@ -558,10 +558,6 @@ public class TransitionSystem implements Serializable {
                 candidates[i] = plan.getTrigger().toString().replace("\\+!", "").replace("\\+", "")
                 + "|" +  plan.getContext() + "|belief|" + sourceFile + "|" +  lineOfCode;
 
-
-                System.out.println("\n\nContext: ");
-                System.out.println(plan.getContext());
-                System.out.println("\n\n");
             }
 
             TSLogger.getInstance()

@@ -1,6 +1,7 @@
 package jason.mod;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
 /**
  * Author: Fahid RM
@@ -53,7 +54,8 @@ public class TSLogger implements TSListener{
      * @see TSListener#log(String, String, Object[], int)
      */
     public void log(String agent, String circumstance, Object[] circumstanceMetaData, int reasoningCycle) {
-        for (TSListener listener : listeners) {
+        for (Iterator<TSListener> iterator = listeners.iterator(); iterator.hasNext();) {
+            TSListener listener = iterator.next();
             listener.log(agent, circumstance, circumstanceMetaData, reasoningCycle);
         }
     }
