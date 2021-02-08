@@ -557,6 +557,11 @@ public class TransitionSystem implements Serializable {
                         plan.getTrigger().getLiteral().getSrcInfo().getSrcFile() : "unknown";
                 candidates[i] = plan.getTrigger().toString().replace("\\+!", "").replace("\\+", "")
                 + "|" +  plan.getContext() + "|belief|" + sourceFile + "|" +  lineOfCode;
+
+
+                System.out.println("\n\nContext: ");
+                System.out.println(plan.getContext());
+                System.out.println("\n\n");
             }
 
             TSLogger.getInstance()
@@ -613,6 +618,7 @@ public class TransitionSystem implements Serializable {
             String sourceFile = "unknown";
             String sourceSample = "unknown";
             // todo: remove this try-catch block and replace with proper checks....
+            /*
             try {
 
                 lineOfCode =  C.getPendingActions()
@@ -639,7 +645,7 @@ public class TransitionSystem implements Serializable {
                         },
                         getUserAgArch().getCycleNumber()
                 );
-            }
+            }*/
             // End of modification block...
             // problem: no plan
             applyRelApplPlRule2("relevant");
